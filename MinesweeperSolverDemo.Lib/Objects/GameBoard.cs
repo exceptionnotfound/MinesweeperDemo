@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MinesweeperSolverDemo.Lib.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,7 @@ namespace MinesweeperSolverDemo.Lib.Objects
         public int Width { get; set; }
         public int Height { get; set; }
         public List<Panel> Panels { get; set; }
+        public GameStatus Status { get; set; }
 
         public GameBoard(int width, int height, int bombs)
         {
@@ -49,6 +51,8 @@ namespace MinesweeperSolverDemo.Lib.Objects
 
                 panel.NearbyBombs = nearbyPanels.Count(x => x.IsBomb);
             }
+
+            Status = GameStatus.InProgress;
             
         }
 
@@ -60,23 +64,27 @@ namespace MinesweeperSolverDemo.Lib.Objects
             return nearbyPanels.Except(currentPanel).ToList();
         }
 
-        public void DisplayAll()
+        public void RevealPanel(Coordinate coordinate)
         {
-            string output = "";
-            foreach (var panel in Panels)
+            var panel = Panels.First(x => x.Coordinate.Latitude == coordinate.Latitude && x.Coordinate.Longitude == coordinate.Longitude);
+            panel.IsRevealed = true;
+            if (panel.IsBomb) Status = GameStatus.Failed; //Game over!
+            if (panel.NearbyBombs == 0)
             {
-                if(panel.Coordinate.Longitude == 0)
+                RevealZeros(coordinate);
+            }
+            CompletionCheck();
+        }
+
+        public void RevealZeros(Coordinate coordinate)
+        {
+            var neighborPanels = GetNearbyPanels(coordinate.Latitude, coordinate.Longitude).Where(panel => !panel.IsRevealed);
+            foreach (var panel in neighborPanels)
+            {
+                panel.IsRevealed = true;
+                if (panel.NearbyBombs == 0)
                 {
-                    Console.WriteLine(output);
-                    output = "";
-                }
-                if(panel.IsBomb)
-                {
-                    output += "X ";
-                }
-                else
-                {
-                    output += panel.NearbyBombs + " ";
+                    RevealZeros(panel.Coordinate);
                 }
             }
         }
@@ -117,12 +125,14 @@ namespace MinesweeperSolverDemo.Lib.Objects
             return height > 0 && height <= Height;
         }
 
-        public bool IsCompleted()
+        private void CompletionCheck()
         {
-            var unrevealedPanels = Panels.Where(x => !x.IsRevealed);
-            var bombPanels = Panels.Where(x => x.IsBomb);
-            if (unrevealedPanels.Equals(bombPanels)) return true;
-            else return false;
+            var unrevealedPanels = Panels.Where(x => !x.IsRevealed).Select(x=>x.ID);
+            var bombPanels = Panels.Where(x => x.IsBomb).Select(x => x.ID);
+            if (!unrevealedPanels.Except(bombPanels).Any())
+            {
+                Status = GameStatus.Completed;
+            }
         }
 
         public int CountUnrevealedBombs()

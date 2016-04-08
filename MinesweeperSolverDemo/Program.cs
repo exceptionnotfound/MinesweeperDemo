@@ -33,14 +33,15 @@ namespace MinesweeperSolverDemo
                 }
                 if(input == 'R')
                 {
-                    bool isStillPlaying = PanelHelpers.RevealPanel(board);
+                    var coordinate = PanelHelpers.GetPanelCoordinate();
+                    board.RevealPanel(coordinate);
                     BoardHelpers.Display(board);
-                    if(!isStillPlaying)
+                    if(board.Status == Lib.Enums.GameStatus.Failed)
                     {
                         Console.WriteLine("Game Over!");
                     }
                     //Check for board completion
-                    if (board.IsCompleted())
+                    if (board.Status == Lib.Enums.GameStatus.Completed)
                     {
                         Console.WriteLine("CONGRATULATIONS!");
                     }
