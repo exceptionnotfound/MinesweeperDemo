@@ -43,6 +43,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers\BoardHelpers.cs" />
+    <Compile Include="Helpers\ErrorHelpers.cs" />
+    <Compile Include="Helpers\PanelHelpers.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
