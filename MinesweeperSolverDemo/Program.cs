@@ -61,7 +61,6 @@ namespace MinesweeperSolverDemo
             Console.WriteLine("B - Display Board");
             Console.WriteLine("C - Display Commands");
             Console.WriteLine("R - Reveal a Panel");
-            Console.WriteLine("F - Flag a Panel");
             Console.WriteLine("N - New Game");
             Console.WriteLine("");
             Console.WriteLine("Here's the key for the panels on the game board:");
