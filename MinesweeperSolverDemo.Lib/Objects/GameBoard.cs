@@ -11,13 +11,15 @@ namespace MinesweeperSolverDemo.Lib.Objects
     {
         public int Width { get; set; }
         public int Height { get; set; }
+        public int BombCount { get; set; }
         public List<Panel> Panels { get; set; }
         public GameStatus Status { get; set; }
 
-        public GameBoard(int width, int height, int bombs, Random rand)
+        public GameBoard(int width, int height, int bombs)
         {
             Width = width;
             Height = height;
+            BombCount = bombs;
             Panels = new List<Panel>();
 
             int id = 1;
@@ -28,27 +30,6 @@ namespace MinesweeperSolverDemo.Lib.Objects
                     Panels.Add(new Panel(id, j, i));
                     id++;
                 }
-            }
-
-            var bombList = Panels.OrderBy(user => rand.Next());
-            var bombSlots = bombList.Take(bombs).ToList().Select(x=>x.Coordinate);
-
-
-            foreach(var bombCoord in bombSlots)
-            {
-                Panels.Single(x => x.Coordinate == bombCoord).IsBomb = true;
-            }
-
-            foreach(var panel in Panels)
-            {
-                if(panel.IsBomb)
-                {
-                    continue;
-                }
-
-                var nearbyPanels = GetNearbyPanels(panel.Coordinate.Latitude, panel.Coordinate.Longitude);
-
-                panel.NearbyBombs = nearbyPanels.Count(x => x.IsBomb);
             }
 
             Status = GameStatus.InProgress;
@@ -80,6 +61,32 @@ namespace MinesweeperSolverDemo.Lib.Objects
             if (Status != GameStatus.Failed)
             {
                 CompletionCheck();
+            }
+        }
+
+        public void FirstMove(int x, int y, Random rand)
+        {
+            var neighbors = GetNearbyPanels(x, y);
+            neighbors.Add(GetPanel(x, y));
+            var bombList = Panels.Except(neighbors).OrderBy(user => rand.Next());
+            var bombSlots = bombList.Take(BombCount).ToList().Select(z => z.Coordinate);
+
+
+            foreach (var bombCoord in bombSlots)
+            {
+                Panels.Single(z => z.Coordinate == bombCoord).IsBomb = true;
+            }
+
+            foreach (var openPanel in Panels)
+            {
+                if (openPanel.IsBomb)
+                {
+                    continue;
+                }
+
+                var nearbyPanels = GetNearbyPanels(openPanel.Coordinate.Latitude, openPanel.Coordinate.Longitude);
+
+                openPanel.NearbyBombs = nearbyPanels.Count(z => z.IsBomb);
             }
         }
 
@@ -131,6 +138,32 @@ namespace MinesweeperSolverDemo.Lib.Objects
             Console.WriteLine(output); //Write the last line
         }
 
+        public void DisplayFinal()
+        {
+            string output = "";
+            foreach (var panel in Panels)
+            {
+                if (panel.Coordinate.Latitude == 1)
+                {
+                    Console.WriteLine(output);
+                    output = "";
+                }
+                if (panel.IsFlagged)
+                {
+                    output += "F ";
+                }
+                else if (panel.IsBomb)
+                {
+                    output += "M ";
+                }
+                else if (!panel.IsBomb)
+                {
+                    output += panel.NearbyBombs + " ";
+                }
+            }
+            Console.WriteLine(output); //Write the last line
+        }
+
         public bool IsValidWidth(int width)
         {
             return width > 0 && width <= Width;
@@ -164,6 +197,11 @@ namespace MinesweeperSolverDemo.Lib.Objects
         public List<Panel> GetRevealedPanels()
         {
             return Panels.Where(x => x.IsRevealed).ToList();
+        }
+
+        public Panel GetPanel(int x, int y)
+        {
+            return Panels.First(z => z.Coordinate.Latitude == x && z.Coordinate.Longitude == y);
         }
 
         public void FlagPanel(int x, int y)

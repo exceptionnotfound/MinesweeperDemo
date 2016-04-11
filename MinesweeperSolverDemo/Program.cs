@@ -64,7 +64,8 @@ namespace MinesweeperSolverDemo
             {
                 if (solver == null)
                 {
-                    solver = new SingleGameSolver();
+                    Random rand = new Random();
+                    solver = new SingleGameSolver(rand);
                     PlayCommands();
                 }
                 if (input == 'A')

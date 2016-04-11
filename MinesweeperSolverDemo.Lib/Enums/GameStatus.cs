@@ -10,6 +10,7 @@ namespace MinesweeperSolverDemo.Lib.Enums
     {
         InProgress,
         Failed,
-        Completed
+        Completed,
+        Unsolveable
     }
 }

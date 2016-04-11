@@ -16,10 +16,16 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
         public int GamesCompleted { get; set; }
         public int GamesFailed { get; set; }
-        public int GamesUnsolvable { get; set; }
+        public int GamesUnsolved { get; set; }
+        public bool UseRandomGuesses { get; set; }
 
         public MultiGameSolver()
         {
+            Console.WriteLine("Do you want the solver to use random guesses? y/n");
+            char useRandom = Console.ReadLine().ToUpper().First();
+
+            UseRandomGuesses = useRandom == 'Y';
+
             int height = 0, width = 0, bombs = 0, boards = 0;
             while (width <= 0)
             {
@@ -57,8 +63,9 @@ namespace MinesweeperSolverDemo.Lib.Solver
             Console.WriteLine("Solving Games...");
             for(int i = 0; i < BoardsCount; i++)
             {
-                GameBoard board = new GameBoard(BoardWidth, BoardHeight, BombsCount, rand);
-                SingleGameSolver solver = new SingleGameSolver(board);
+                GameBoard board = new GameBoard(BoardWidth, BoardHeight, BombsCount);
+                SingleGameSolver solver = new SingleGameSolver(board, rand);
+                solver.UseRandomGuesses = UseRandomGuesses;
                 solver.Solve();
 
                 if(solver.Board.Status == Enums.GameStatus.Completed)
@@ -71,13 +78,13 @@ namespace MinesweeperSolverDemo.Lib.Solver
                 }
                 else if(solver.IsUnsolveable)
                 {
-                    GamesUnsolvable++;
+                    GamesUnsolved++;
                 }
             }
 
             Console.WriteLine("Games Completed: " + GamesCompleted.ToString());
             Console.WriteLine("Games Failed: " + GamesFailed.ToString());
-            Console.WriteLine("Unsolveable Games: " + GamesUnsolvable.ToString());
+            Console.WriteLine("Games Unsolved: " + GamesUnsolved.ToString());
         }
 
         

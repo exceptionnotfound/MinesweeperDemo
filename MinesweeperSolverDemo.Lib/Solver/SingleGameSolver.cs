@@ -12,14 +12,19 @@ namespace MinesweeperSolverDemo.Lib.Solver
         public GameBoard Board { get; set; }
 
         public List<Panel> CompletedPanels { get; set; }
-        public bool IsUnsolveable { get; set; }
 
         public int MoveCounter { get; set; }
-        public SingleGameSolver()
-        {
-            MoveCounter = 0;
 
-            Random rand = new Random();
+        public bool IsUnsolveable { get; set; }
+
+        public bool UseRandomGuesses { get; set; }
+
+        public Random Random { get; set; }
+
+        public SingleGameSolver(Random rand)
+        {
+            Random = rand;
+            MoveCounter = 0;
             int height = 0, width = 0, bombs = 0;
             while (width <= 0)
             {
@@ -39,12 +44,13 @@ namespace MinesweeperSolverDemo.Lib.Solver
                 BombsErrors(bombs);
             }
 
-            Board = new GameBoard(width, height, bombs, rand);
+            Board = new GameBoard(width, height, bombs);
         }
 
-        public SingleGameSolver(GameBoard board)
+        public SingleGameSolver(GameBoard board, Random rand)
         {
             Board = board;
+            Random = rand;
         }
 
         public int GetWidth()
@@ -136,29 +142,32 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
         public void Solve()
         {
-            Random rand = new Random();
-            while (Board.Status == Enums.GameStatus.InProgress && !IsUnsolveable)
+            while (Board.Status == Enums.GameStatus.InProgress)
             {
-                if(!Board.Panels.Any(x=>x.IsRevealed))
+                if (!Board.Panels.Any(x=>x.IsRevealed))
                 {
-                    RandomMove(rand);
-                    FlagObviousMines();
+                    FirstMove();
                 }
+                FlagObviousMines();
 
-                while(MoveCounter == Board.Panels.Count(x=>x.IsRevealed) && Board.Status != Enums.GameStatus.Failed)
-                {
-                    RandomMove(rand);
-                    FlagObviousMines();
-                }
+                Board.Display();
 
                 if (HasAvailableMoves())
                 {
                     NextMove();
-                    FlagObviousMines();
+                    PairsMoves();
                 }
                 else
                 {
-                    IsUnsolveable = true;
+                    if (UseRandomGuesses)
+                    {
+                        RandomMove();
+                    }
+                    else
+                    {
+                        IsUnsolveable = true;
+                        break;
+                    }
                 }
 
                 Board.Display();
@@ -166,25 +175,37 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
             if(Board.Status == Enums.GameStatus.Failed)
             {
+                Board.DisplayFinal();
                 Console.WriteLine("Solver Failed!");
             }
-            if (Board.Status == Enums.GameStatus.Completed)
+            else if (Board.Status == Enums.GameStatus.Completed)
             {
                 Console.WriteLine("Solver SUCCESS");
             }
-            if(IsUnsolveable)
+            else if(IsUnsolveable)
             {
-                Console.Write("Game is UNSOLVEABLE.");
+                Board.Display();
+                Console.WriteLine("Game is UNSOLVEABLE");
             }
         }
 
-        public void RandomMove(Random rand)
+        public void FirstMove()
         {
-            var randomID = rand.Next(1, Board.Panels.Count);
+            var randomID = Random.Next(1, Board.Panels.Count);
+            var panel = Board.Panels.First(x => x.ID == randomID);
+
+            Board.FirstMove(panel.Coordinate.Latitude, panel.Coordinate.Longitude, Random);
+            Board.RevealPanel(panel.Coordinate);
+            MoveCounter++;
+        }
+
+        public void RandomMove()
+        {
+            var randomID = Random.Next(1, Board.Panels.Count);
             var panel = Board.Panels.First(x => x.ID == randomID);
             while(panel.IsRevealed)
             {
-                randomID = rand.Next(1, Board.Panels.Count);
+                randomID = Random.Next(1, Board.Panels.Count);
                 panel = Board.Panels.First(x => x.ID == randomID);
             }
 
@@ -204,6 +225,29 @@ namespace MinesweeperSolverDemo.Lib.Solver
                 {
                     return true;
                 }
+
+                var neighborNumberPanels = neighborPanels.Where(x => x.NearbyBombs > 0);
+                foreach (var neighbor in neighborNumberPanels)
+                {
+                    //Find each unopened neighbor of both the original panel and the current neighbor panel
+                    var nextDoorPanels = Board.GetNearbyPanels(neighbor.Coordinate.Latitude, neighbor.Coordinate.Longitude).Where(x => !x.IsRevealed);
+                    var commonNeighbors = nextDoorPanels.Intersect(neighborNumberPanels.Where(x => !x.IsRevealed));
+                    var uniqueNeighbors = nextDoorPanels.Except(commonNeighbors);
+                    if (neighbor.NearbyBombs == numberPanel.NearbyBombs && commonNeighbors.Where(x => x.IsFlagged).Count() == neighbor.NearbyBombs)
+                    {
+                        foreach (var common in commonNeighbors)
+                        {
+                            Board.RevealPanel(common.Coordinate);
+                        }
+                    }
+                    else if (neighbor.NearbyBombs - numberPanel.NearbyBombs == nextDoorPanels.Count() - neighborNumberPanels.Where(x => !x.IsRevealed).Count())
+                    {
+                        foreach (var unique in uniqueNeighbors)
+                        {
+                            Board.FlagPanel(unique.Coordinate.Latitude, unique.Coordinate.Longitude);
+                        }
+                    }
+                }
             }
 
             return false;
@@ -211,7 +255,7 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
         public void NextMove()
         {
-            //Find any numbered panel where the number of flags around it equals its number, then click on every square around that.
+            //Find any numbered panel where the number of flags around it equals its number, then click on every neighboring unrevealed panel.
             var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyBombs > 0);
             foreach(var numberPanel in numberedPanels)
             {
@@ -224,6 +268,27 @@ namespace MinesweeperSolverDemo.Lib.Solver
                     {
                         Board.RevealPanel(unrevealedPanel.Coordinate.Latitude, unrevealedPanel.Coordinate.Longitude);
                         MoveCounter++;
+                    }
+                }
+            }
+        }
+
+        private void PairsMoves()
+        {
+            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyBombs > 0);
+            foreach(var numberPanel in numberedPanels)
+            {
+                var neighborPanels = Board.GetNearbyPanels(numberPanel.Coordinate.Latitude, numberPanel.Coordinate.Longitude).Where(x => x.NearbyBombs > 0);
+                foreach(var neighbor in neighborPanels)
+                {
+                    var nextDoorPanels = Board.GetNearbyPanels(neighbor.Coordinate.Latitude, neighbor.Coordinate.Longitude).Where(x => !x.IsRevealed);
+                    var commonNeighbors = nextDoorPanels.Intersect(neighborPanels.Where(x => !x.IsRevealed));
+                    if (neighbor.NearbyBombs == numberPanel.NearbyBombs && commonNeighbors.Where(x => x.IsFlagged).Count() == neighbor.NearbyBombs)
+                    {
+                        foreach (var common in commonNeighbors.Where(x=>!x.IsFlagged))
+                        {
+                            Board.RevealPanel(common.Coordinate);
+                        }
                     }
                 }
             }
