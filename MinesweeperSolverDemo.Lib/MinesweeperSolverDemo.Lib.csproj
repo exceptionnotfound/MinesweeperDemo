@@ -45,8 +45,8 @@
     <Compile Include="Objects\GameBoard.cs" />
     <Compile Include="Objects\Panel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Solver\PanelWrapper.cs" />
-    <Compile Include="Solver\Solver.cs" />
+    <Compile Include="Solver\MultiGameSolver.cs" />
+    <Compile Include="Solver\SingleGameSolver.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

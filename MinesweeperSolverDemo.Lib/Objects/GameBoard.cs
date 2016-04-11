@@ -14,19 +14,18 @@ namespace MinesweeperSolverDemo.Lib.Objects
         public List<Panel> Panels { get; set; }
         public GameStatus Status { get; set; }
 
-        public GameBoard(int width, int height, int bombs)
+        public GameBoard(int width, int height, int bombs, Random rand)
         {
             Width = width;
             Height = height;
-            var rand = new Random();
             Panels = new List<Panel>();
 
             int id = 1;
-            for(int i = 0; i < height; i++)
+            for(int i = 1; i <= height; i++)
             {
-                for (int j = 0; j < width; j++)
+                for (int j = 1; j <= width; j++)
                 {
-                    Panels.Add(new Panel(id, i, j));
+                    Panels.Add(new Panel(id, j, i));
                     id++;
                 }
             }
@@ -66,25 +65,38 @@ namespace MinesweeperSolverDemo.Lib.Objects
 
         public void RevealPanel(Coordinate coordinate)
         {
-            var panel = Panels.First(x => x.Coordinate.Latitude == coordinate.Latitude && x.Coordinate.Longitude == coordinate.Longitude);
+            RevealPanel(coordinate.Latitude, coordinate.Longitude);
+        }
+
+        public void RevealPanel(int x, int y)
+        {
+            var panel = Panels.First(z => z.Coordinate.Latitude == x && z.Coordinate.Longitude == y);
             panel.IsRevealed = true;
             if (panel.IsBomb) Status = GameStatus.Failed; //Game over!
-            if (panel.NearbyBombs == 0)
+            if (!panel.IsBomb && panel.NearbyBombs == 0)
             {
-                RevealZeros(coordinate);
+                RevealZeros(x, y);
             }
-            CompletionCheck();
+            if (Status != GameStatus.Failed)
+            {
+                CompletionCheck();
+            }
         }
 
         public void RevealZeros(Coordinate coordinate)
         {
-            var neighborPanels = GetNearbyPanels(coordinate.Latitude, coordinate.Longitude).Where(panel => !panel.IsRevealed);
+            RevealZeros(coordinate.Latitude, coordinate.Longitude);
+        }
+
+        public void RevealZeros(int x, int y)
+        {
+            var neighborPanels = GetNearbyPanels(x, y).Where(panel => !panel.IsRevealed);
             foreach (var panel in neighborPanels)
             {
                 panel.IsRevealed = true;
                 if (panel.NearbyBombs == 0)
                 {
-                    RevealZeros(panel.Coordinate);
+                    RevealZeros(panel.Coordinate.Latitude, panel.Coordinate.Longitude);
                 }
             }
         }
@@ -94,12 +106,16 @@ namespace MinesweeperSolverDemo.Lib.Objects
             string output = "";
             foreach (var panel in Panels)
             {
-                if (panel.Coordinate.Longitude == 0)
+                if (panel.Coordinate.Latitude == 1)
                 {
                     Console.WriteLine(output);
                     output = "";
                 }
-                if (!panel.IsRevealed)
+                if (panel.IsFlagged)
+                {
+                    output += "F ";
+                }
+                else if (!panel.IsRevealed)
                 {
                     output += "U ";
                 }
@@ -138,6 +154,25 @@ namespace MinesweeperSolverDemo.Lib.Objects
         public int CountUnrevealedBombs()
         {
             return Panels.Count(x => x.IsRevealed == false && x.IsBomb);
+        }
+
+        public List<Panel> GetUnrevealedPanels()
+        {
+            return Panels.Where(x => x.IsRevealed == false).ToList();
+        }
+
+        public List<Panel> GetRevealedPanels()
+        {
+            return Panels.Where(x => x.IsRevealed).ToList();
+        }
+
+        public void FlagPanel(int x, int y)
+        {
+            var panel = Panels.Where(z => z.Coordinate.Latitude == x && z.Coordinate.Longitude == y).First();
+            if(!panel.IsRevealed)
+            {
+                panel.IsFlagged = true;
+            }
         }
     }
 }
