@@ -43,9 +43,9 @@ namespace MinesweeperSolverDemo
             Console.WriteLine("");
             Console.WriteLine("Here's the key for the panels on the game board:");
             Console.WriteLine("U - Unrevealed");
-            Console.WriteLine("# - Number of adjacent panels (including diagonals) that have bombs on them.");
+            Console.WriteLine("# - Number of adjacent panels (including diagonals) that have mines on them.");
             Console.WriteLine("F - A flagged panel");
-            Console.WriteLine("X - Bomb (don't reveal these!)");
+            Console.WriteLine("X - Mine (don't reveal these!)");
         }
 
         private static void RunTypeCommands()
@@ -82,8 +82,24 @@ namespace MinesweeperSolverDemo
                 }
                 if (input == 'R')
                 {
-                    var coordinate = GetPanelCoordinate();
-                    solver.Board.RevealPanel(coordinate);
+                    int x = 0, y = 0;
+                    while (x <= 0)
+                    {
+                        //Get Horizontal Coordinate
+                        Console.WriteLine("Enter horizontal coordinate:");
+                        string xEntered = Console.ReadLine();
+                        bool isValid = int.TryParse(xEntered, out x);
+                        CoordinateErrors(x);
+                    }
+
+                    while (y <= 0)
+                    {
+                        Console.WriteLine("Enter vertical coordinate:");
+                        string yEntered = Console.ReadLine();
+                        bool isValid = int.TryParse(yEntered, out y);
+                        CoordinateErrors(y);
+                    }
+                    solver.Board.RevealPanel(x, y);
                     solver.Board.Display();
                     if (solver.Board.Status == Lib.Enums.GameStatus.Failed)
                     {
@@ -103,33 +119,6 @@ namespace MinesweeperSolverDemo
                     solver = null;
                 }
             }
-        }
-
-        private static Coordinate GetPanelCoordinate()
-        {
-            int x = 0, y = 0;
-            while (x <= 0)
-            {
-                //Get Horizontal Coordinate
-                Console.WriteLine("Enter horizontal coordinate:");
-                string xEntered = Console.ReadLine();
-                bool isValid = int.TryParse(xEntered, out x);
-                CoordinateErrors(x);
-            }
-
-            while (y <= 0)
-            {
-                Console.WriteLine("Enter vertical coordinate:");
-                string yEntered = Console.ReadLine();
-                bool isValid = int.TryParse(yEntered, out y);
-                CoordinateErrors(y);
-            }
-
-            return new Coordinate()
-            {
-                Latitude = x,
-                Longitude = y
-            };
         }
 
         private static void CoordinateErrors(int coord)

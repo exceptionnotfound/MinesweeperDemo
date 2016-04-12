@@ -11,15 +11,15 @@ namespace MinesweeperSolverDemo.Lib.Objects
     {
         public int Width { get; set; }
         public int Height { get; set; }
-        public int BombCount { get; set; }
+        public int MineCount { get; set; }
         public List<Panel> Panels { get; set; }
         public GameStatus Status { get; set; }
 
-        public GameBoard(int width, int height, int bombs)
+        public GameBoard(int width, int height, int mines)
         {
             Width = width;
             Height = height;
-            BombCount = bombs;
+            MineCount = mines;
             Panels = new List<Panel>();
 
             int id = 1;
@@ -38,32 +38,27 @@ namespace MinesweeperSolverDemo.Lib.Objects
 
         public List<Panel> GetNearbyPanels(int latitude, int longitude)
         {
-            var nearbyPanels = Panels.Where(x => x.Coordinate.Latitude >= (latitude - 1) && x.Coordinate.Latitude <= (latitude + 1)
-                                                 && x.Coordinate.Longitude >= (longitude - 1) && x.Coordinate.Longitude <= (longitude + 1));
-            var currentPanel = Panels.Where(x => x.Coordinate.Latitude == latitude && x.Coordinate.Longitude == longitude);
+            var nearbyPanels = Panels.Where(panel => panel.X >= (latitude - 1) && panel.X <= (latitude + 1)
+                                                 && panel.Y >= (longitude - 1) && panel.Y <= (longitude + 1));
+            var currentPanel = Panels.Where(panel => panel.X == latitude && panel.Y == longitude);
             return nearbyPanels.Except(currentPanel).ToList();
         }
 
         public List<Panel> GetClosestNeighbors(int latitude, int longitude, int depth)
         {
-            var nearbyPanels = Panels.Where(x => x.Coordinate.Latitude >= (latitude - depth) && x.Coordinate.Latitude <= (latitude + depth)
-                                                 && x.Coordinate.Longitude >= (longitude - depth) && x.Coordinate.Longitude <= (longitude + depth));
-            var currentPanel = Panels.Where(x => x.Coordinate.Latitude == latitude && x.Coordinate.Longitude == longitude);
+            var nearbyPanels = Panels.Where(panel => panel.X >= (latitude - depth) && panel.X <= (latitude + depth)
+                                                 && panel.Y >= (longitude - depth) && panel.Y <= (longitude + depth));
+            var currentPanel = Panels.Where(panel => panel.X == latitude && panel.Y == longitude);
             return nearbyPanels.Except(currentPanel).ToList();
-        }
-
-        public void RevealPanel(Coordinate coordinate)
-        {
-            RevealPanel(coordinate.Latitude, coordinate.Longitude);
         }
 
         public void RevealPanel(int x, int y)
         {
-            var panel = Panels.First(z => z.Coordinate.Latitude == x && z.Coordinate.Longitude == y);
+            var panel = Panels.First(z => z.X == x && z.Y == y);
             panel.IsRevealed = true;
             panel.IsFlagged = false;
-            if (panel.IsBomb) Status = GameStatus.Failed; //Game over!
-            if (!panel.IsBomb && panel.NearbyBombs == 0)
+            if (panel.IsMine) Status = GameStatus.Failed; //Game over!
+            if (!panel.IsMine && panel.NearbyMines == 0)
             {
                 RevealZeros(x, y);
             }
@@ -78,31 +73,26 @@ namespace MinesweeperSolverDemo.Lib.Objects
             var depth = 0.25 * Width;
             var neighbors = GetClosestNeighbors(x, y, (int)depth);
             neighbors.Add(GetPanel(x, y));
-            var bombList = Panels.Except(neighbors).OrderBy(user => rand.Next());
-            var bombSlots = bombList.Take(BombCount).ToList().Select(z => z.Coordinate);
+            var mineList = Panels.Except(neighbors).OrderBy(user => rand.Next());
+            var mineSlots = mineList.Take(MineCount).ToList().Select(z => new { z.X, z.Y });
 
 
-            foreach (var bombCoord in bombSlots)
+            foreach (var mineCoord in mineSlots)
             {
-                Panels.Single(z => z.Coordinate == bombCoord).IsBomb = true;
+                Panels.Single(z => z.X == mineCoord.X && z.Y == mineCoord.Y).IsMine = true;
             }
 
             foreach (var openPanel in Panels)
             {
-                if (openPanel.IsBomb)
+                if (openPanel.IsMine)
                 {
                     continue;
                 }
 
-                var nearbyPanels = GetNearbyPanels(openPanel.Coordinate.Latitude, openPanel.Coordinate.Longitude);
+                var nearbyPanels = GetNearbyPanels(openPanel.X, openPanel.Y);
 
-                openPanel.NearbyBombs = nearbyPanels.Count(z => z.IsBomb);
+                openPanel.NearbyMines = nearbyPanels.Count(z => z.IsMine);
             }
-        }
-
-        public void RevealZeros(Coordinate coordinate)
-        {
-            RevealZeros(coordinate.Latitude, coordinate.Longitude);
         }
 
         public void RevealZeros(int x, int y)
@@ -111,9 +101,9 @@ namespace MinesweeperSolverDemo.Lib.Objects
             foreach (var panel in neighborPanels)
             {
                 panel.IsRevealed = true;
-                if (panel.NearbyBombs == 0)
+                if (panel.NearbyMines == 0)
                 {
-                    RevealZeros(panel.Coordinate.Latitude, panel.Coordinate.Longitude);
+                    RevealZeros(panel.X, panel.Y);
                 }
             }
         }
@@ -123,7 +113,7 @@ namespace MinesweeperSolverDemo.Lib.Objects
             string output = "";
             foreach (var panel in Panels)
             {
-                if (panel.Coordinate.Latitude == 1)
+                if (panel.X == 1)
                 {
                     Console.WriteLine(output);
                     output = "";
@@ -136,11 +126,11 @@ namespace MinesweeperSolverDemo.Lib.Objects
                 {
                     output += "U ";
                 }
-                else if(panel.IsRevealed && !panel.IsBomb)
+                else if(panel.IsRevealed && !panel.IsMine)
                 {
-                    output += panel.NearbyBombs + " ";
+                    output += panel.NearbyMines + " ";
                 }
-                else if(panel.IsRevealed && panel.IsBomb)
+                else if(panel.IsRevealed && panel.IsMine)
                 {
                     output += "X ";
                 }
@@ -153,18 +143,18 @@ namespace MinesweeperSolverDemo.Lib.Objects
             string output = "";
             foreach (var panel in Panels)
             {
-                if (panel.Coordinate.Latitude == 1)
+                if (panel.X == 1)
                 {
                     Console.WriteLine(output);
                     output = "";
                 }
-                if (panel.IsBomb)
+                if (panel.IsMine)
                 {
                     output += "M ";
                 }
-                else if (!panel.IsBomb)
+                else if (!panel.IsMine)
                 {
-                    output += panel.NearbyBombs + " ";
+                    output += panel.NearbyMines + " ";
                 }
             }
             Console.WriteLine(output); //Write the last line
@@ -183,21 +173,11 @@ namespace MinesweeperSolverDemo.Lib.Objects
         private void CompletionCheck()
         {
             var unrevealedPanels = Panels.Where(x => !x.IsRevealed).Select(x=>x.ID);
-            var bombPanels = Panels.Where(x => x.IsBomb).Select(x => x.ID);
-            if (!unrevealedPanels.Except(bombPanels).Any())
+            var minePanels = Panels.Where(x => x.IsMine).Select(x => x.ID);
+            if (!unrevealedPanels.Except(minePanels).Any())
             {
                 Status = GameStatus.Completed;
             }
-        }
-
-        public int CountUnrevealedBombs()
-        {
-            return Panels.Count(x => x.IsRevealed == false && x.IsBomb);
-        }
-
-        public List<Panel> GetUnrevealedPanels()
-        {
-            return Panels.Where(x => x.IsRevealed == false).ToList();
         }
 
         public List<Panel> GetRevealedPanels()
@@ -207,12 +187,12 @@ namespace MinesweeperSolverDemo.Lib.Objects
 
         public Panel GetPanel(int x, int y)
         {
-            return Panels.First(z => z.Coordinate.Latitude == x && z.Coordinate.Longitude == y);
+            return Panels.First(z => z.X == x && z.Y == y);
         }
 
         public void FlagPanel(int x, int y)
         {
-            var panel = Panels.Where(z => z.Coordinate.Latitude == x && z.Coordinate.Longitude == y).First();
+            var panel = Panels.Where(z => z.X == x && z.Y == y).First();
             if(!panel.IsRevealed)
             {
                 panel.IsFlagged = true;

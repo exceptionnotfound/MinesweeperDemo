@@ -8,7 +8,7 @@ namespace MinesweeperSolverDemo.Lib.Objects
 {
     public class Coordinate
     {
-        public int Latitude { get; set; }
-        public int Longitude { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
     }
 }

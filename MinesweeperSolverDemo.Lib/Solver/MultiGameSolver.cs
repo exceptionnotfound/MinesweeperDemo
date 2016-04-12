@@ -11,7 +11,7 @@ namespace MinesweeperSolverDemo.Lib.Solver
     {
         public int BoardWidth { get; set; }
         public int BoardHeight { get; set; }
-        public int BombsCount { get; set; }
+        public int MinesCount { get; set; }
         public int BoardsCount { get; set; }
 
         public int GamesCompleted { get; set; }
@@ -26,7 +26,7 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
             UseRandomGuesses = useRandom == 'Y';
 
-            int height = 0, width = 0, bombs = 0, boards = 0;
+            int height = 0, width = 0, mines = 0, boards = 0;
             while (width <= 0)
             {
                 width = GetWidth();
@@ -39,10 +39,10 @@ namespace MinesweeperSolverDemo.Lib.Solver
                 HeightErrors(height);
             }
 
-            while (bombs <= 0)
+            while (mines <= 0)
             {
-                bombs = GetBombs();
-                BombsErrors(bombs);
+                mines = GetMines();
+                MinesErrors(mines);
             }
 
             while (boards <= 0)
@@ -53,7 +53,7 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
             BoardWidth = width;
             BoardHeight = height;
-            BombsCount = bombs;
+            MinesCount = mines;
             BoardsCount = boards;
         }
 
@@ -63,7 +63,7 @@ namespace MinesweeperSolverDemo.Lib.Solver
             Console.WriteLine("Solving Games...");
             for(int i = 0; i < BoardsCount; i++)
             {
-                GameBoard board = new GameBoard(BoardWidth, BoardHeight, BombsCount);
+                GameBoard board = new GameBoard(BoardWidth, BoardHeight, MinesCount);
                 SingleGameSolver solver = new SingleGameSolver(board, rand);
                 solver.UseRandomGuesses = UseRandomGuesses;
                 solver.Solve();
@@ -115,15 +115,15 @@ namespace MinesweeperSolverDemo.Lib.Solver
             else return -1;
         }
 
-        private int GetBombs()
+        private int GetMines()
         {
-            Console.Write("Please enter the number of bombs on each board: ");
-            string bombsEntered = Console.ReadLine();
-            int bombs;
-            bool isValid = int.TryParse(bombsEntered, out bombs);
+            Console.Write("Please enter the number of mines on each board: ");
+            string minesEntered = Console.ReadLine();
+            int mines;
+            bool isValid = int.TryParse(minesEntered, out mines);
             if (isValid)
             {
-                return bombs;
+                return mines;
             }
             else return -1;
         }
@@ -165,15 +165,15 @@ namespace MinesweeperSolverDemo.Lib.Solver
             }
         }
 
-        private void BombsErrors(int bombs)
+        private void MinesErrors(int mines)
         {
-            if (bombs == 0)
+            if (mines == 0)
             {
-                Console.WriteLine("The number of bombs must be greater than 0.");
+                Console.WriteLine("The number of mines must be greater than 0.");
             }
-            else if (bombs < 0)
+            else if (mines < 0)
             {
-                Console.WriteLine("Please enter a valid positive number for the number of bombs on the board.");
+                Console.WriteLine("Please enter a valid positive number for the number of mines on the board.");
             }
         }
 

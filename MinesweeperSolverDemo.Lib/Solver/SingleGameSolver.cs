@@ -13,8 +13,6 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
         public List<Panel> CompletedPanels { get; set; }
 
-        public int MoveCounter { get; set; }
-
         public bool IsUnsolveable { get; set; }
 
         public bool UseRandomGuesses { get; set; }
@@ -24,8 +22,7 @@ namespace MinesweeperSolverDemo.Lib.Solver
         public SingleGameSolver(Random rand)
         {
             Random = rand;
-            MoveCounter = 0;
-            int height = 0, width = 0, bombs = 0;
+            int height = 0, width = 0, mines = 0;
             while (width <= 0)
             {
                 width = GetWidth();
@@ -38,13 +35,13 @@ namespace MinesweeperSolverDemo.Lib.Solver
                 HeightErrors(height);
             }
 
-            while (bombs <= 0)
+            while (mines <= 0)
             {
-                bombs = GetBombs();
-                BombsErrors(bombs);
+                mines = GetMines();
+                MinesErrors(mines);
             }
 
-            Board = new GameBoard(width, height, bombs);
+            Board = new GameBoard(width, height, mines);
         }
 
         public SingleGameSolver(GameBoard board, Random rand)
@@ -79,15 +76,15 @@ namespace MinesweeperSolverDemo.Lib.Solver
             else return -1;
         }
 
-        public int GetBombs()
+        public int GetMines()
         {
-            Console.Write("Please enter the number of bombs on the board: ");
-            string bombsEntered = Console.ReadLine();
-            int bombs;
-            bool isValid = int.TryParse(bombsEntered, out bombs);
+            Console.Write("Please enter the number of mines on the board: ");
+            string minesEntered = Console.ReadLine();
+            int mines;
+            bool isValid = int.TryParse(minesEntered, out mines);
             if (isValid)
             {
-                return bombs;
+                return mines;
             }
             else return -1;
         }
@@ -104,15 +101,15 @@ namespace MinesweeperSolverDemo.Lib.Solver
             }
         }
 
-        public void BombsErrors(int bombs)
+        public void MinesErrors(int mines)
         {
-            if (bombs == 0)
+            if (mines == 0)
             {
-                Console.WriteLine("The nunmber of bombs must be greater than 0.");
+                Console.WriteLine("The nunmber of mines must be greater than 0.");
             }
-            else if (bombs < 0)
+            else if (mines < 0)
             {
-                Console.WriteLine("Please enter a valid positive number for the number of bombs on the board.");
+                Console.WriteLine("Please enter a valid positive number for the number of mines on the board.");
             }
         }
 
@@ -171,6 +168,8 @@ namespace MinesweeperSolverDemo.Lib.Solver
                     }
                 }
 
+                Endgame();
+
                 Board.Display();
             }
 
@@ -197,48 +196,46 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
             Board.FirstMove(randomX, randomY, Random);
             Board.RevealPanel(randomX, randomY);
-            MoveCounter++;
         }
 
         public void RandomMove()
         {
             var randomID = Random.Next(1, Board.Panels.Count);
             var panel = Board.Panels.First(x => x.ID == randomID);
-            while(panel.IsRevealed)
+            while(panel.IsRevealed || panel.IsFlagged)
             {
                 randomID = Random.Next(1, Board.Panels.Count);
                 panel = Board.Panels.First(x => x.ID == randomID);
             }
 
-            Board.RevealPanel(panel.Coordinate.Latitude, panel.Coordinate.Longitude);
-            MoveCounter++;
+            Board.RevealPanel(panel.X, panel.Y);
         }
 
         public bool HasAvailableMoves()
         {
             //Find any numbered panel where the number of flags around it equals its number, then click on every square around that.
-            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyBombs > 0);
+            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyMines > 0);
             foreach (var numberPanel in numberedPanels)
             {
-                var neighborPanels = Board.GetNearbyPanels(numberPanel.Coordinate.Latitude, numberPanel.Coordinate.Longitude);
+                var neighborPanels = Board.GetNearbyPanels(numberPanel.X, numberPanel.Y);
                 var flaggedNeighbors = neighborPanels.Where(x => x.IsFlagged);
-                if (flaggedNeighbors.Count() == numberPanel.NearbyBombs && neighborPanels.Any(x => !x.IsRevealed && !x.IsFlagged))
+                if (flaggedNeighbors.Count() == numberPanel.NearbyMines && neighborPanels.Any(x => !x.IsRevealed && !x.IsFlagged))
                 {
                     return true;
                 }
 
-                var neighborNumberPanels = neighborPanels.Where(x => x.NearbyBombs > 0);
+                var neighborNumberPanels = neighborPanels.Where(x => x.NearbyMines > 0);
                 foreach (var neighbor in neighborNumberPanels)
                 {
                     //Find each unopened neighbor of both the original panel and the current neighbor panel
-                    var nextDoorPanels = Board.GetNearbyPanels(neighbor.Coordinate.Latitude, neighbor.Coordinate.Longitude).Where(x => !x.IsRevealed);
+                    var nextDoorPanels = Board.GetNearbyPanels(neighbor.X, neighbor.Y).Where(x => !x.IsRevealed);
                     var commonNeighbors = nextDoorPanels.Intersect(neighborNumberPanels.Where(x => !x.IsRevealed));
                     var uniqueNeighbors = nextDoorPanels.Except(commonNeighbors);
-                    if (neighbor.NearbyBombs == numberPanel.NearbyBombs && commonNeighbors.Where(x => x.IsFlagged).Count() == neighbor.NearbyBombs)
+                    if (neighbor.NearbyMines == numberPanel.NearbyMines && commonNeighbors.Where(x => x.IsFlagged).Count() == neighbor.NearbyMines)
                     {
                         foreach (var common in commonNeighbors)
                         {
-                            Board.RevealPanel(common.Coordinate);
+                            Board.RevealPanel(common.X, common.Y);
                         }
                     }
                 }
@@ -250,18 +247,17 @@ namespace MinesweeperSolverDemo.Lib.Solver
         public void NextMove()
         {
             //Find any numbered panel where the number of flags around it equals its number, then click on every neighboring unrevealed panel.
-            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyBombs > 0);
+            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyMines > 0);
             foreach(var numberPanel in numberedPanels)
             {
-                var neighborPanels = Board.GetNearbyPanels(numberPanel.Coordinate.Latitude, numberPanel.Coordinate.Longitude);
+                var neighborPanels = Board.GetNearbyPanels(numberPanel.X, numberPanel.Y);
                 var flaggedNeighbors = neighborPanels.Where(x => x.IsFlagged);
-                if(flaggedNeighbors.Count() == numberPanel.NearbyBombs)
+                if(flaggedNeighbors.Count() == numberPanel.NearbyMines)
                 {
                     //Reveal all unrevealed, unflagged neighbor panels
                     foreach(var unrevealedPanel in neighborPanels.Where(x=>!x.IsRevealed && !x.IsFlagged))
                     {
-                        Board.RevealPanel(unrevealedPanel.Coordinate.Latitude, unrevealedPanel.Coordinate.Longitude);
-                        MoveCounter++;
+                        Board.RevealPanel(unrevealedPanel.X, unrevealedPanel.Y);
                     }
                 }
             }
@@ -269,19 +265,19 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
         private void PairsMoves()
         {
-            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyBombs > 0);
+            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyMines > 0);
             foreach(var numberPanel in numberedPanels)
             {
-                var neighborPanels = Board.GetNearbyPanels(numberPanel.Coordinate.Latitude, numberPanel.Coordinate.Longitude).Where(x => x.NearbyBombs > 0);
+                var neighborPanels = Board.GetNearbyPanels(numberPanel.X, numberPanel.Y).Where(x => x.NearbyMines > 0);
                 foreach(var neighbor in neighborPanels)
                 {
-                    var nextDoorPanels = Board.GetNearbyPanels(neighbor.Coordinate.Latitude, neighbor.Coordinate.Longitude).Where(x => !x.IsRevealed);
+                    var nextDoorPanels = Board.GetNearbyPanels(neighbor.X, neighbor.Y).Where(x => !x.IsRevealed);
                     var commonNeighbors = nextDoorPanels.Intersect(neighborPanels.Where(x => !x.IsRevealed));
-                    if (neighbor.NearbyBombs == numberPanel.NearbyBombs && commonNeighbors.Where(x => x.IsFlagged).Count() == neighbor.NearbyBombs)
+                    if (neighbor.NearbyMines == numberPanel.NearbyMines && commonNeighbors.Where(x => x.IsFlagged).Count() == neighbor.NearbyMines)
                     {
                         foreach (var common in commonNeighbors.Where(x=>!x.IsFlagged))
                         {
-                            Board.RevealPanel(common.Coordinate);
+                            Board.RevealPanel(common.X, common.Y);
                         }
                     }
                 }
@@ -291,16 +287,31 @@ namespace MinesweeperSolverDemo.Lib.Solver
         public void FlagObviousMines()
         {
             //Foreach revealed panel that has a count > 0, if the number of unrevealed squares around it matches its number, they must all be mines.
-            var numberPanels = Board.GetRevealedPanels().Where(x => x.NearbyBombs > 0);
+            var numberPanels = Board.GetRevealedPanels().Where(x => x.NearbyMines > 0);
             foreach(var panel in numberPanels)
             {
-                var neighborPanels = Board.GetNearbyPanels(panel.Coordinate.Latitude, panel.Coordinate.Longitude);
-                if(neighborPanels.Count(x=>!x.IsRevealed) == panel.NearbyBombs)
+                var neighborPanels = Board.GetNearbyPanels(panel.X, panel.Y);
+                if(neighborPanels.Count(x=>!x.IsRevealed) == panel.NearbyMines)
                 {
                     foreach(var neighbor in neighborPanels.Where(x=>!x.IsRevealed))
                     {
-                        Board.FlagPanel(neighbor.Coordinate.Latitude, neighbor.Coordinate.Longitude);
+                        Board.FlagPanel(neighbor.X, neighbor.Y);
                     }
+                }
+            }
+        }
+
+        public void Endgame()
+        {
+            //Count all the flagged panels.  If the number of flagged panels == the number of mines on the board, reveal all remaining panels.
+            var flaggedPanels = Board.Panels.Where(x => x.IsFlagged).Count();
+            if(flaggedPanels == Board.MineCount)
+            {
+                //Reveal all unrevealed, unflagged panels
+                var unrevealedPanels = Board.Panels.Where(x => !x.IsFlagged && !x.IsRevealed);
+                foreach(var panel in unrevealedPanels)
+                {
+                    Board.RevealPanel(panel.X, panel.Y);
                 }
             }
         }
