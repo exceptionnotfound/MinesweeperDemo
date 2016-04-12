@@ -127,24 +127,24 @@ namespace MinesweeperSolverDemo.Lib.Solver
         public bool HasAvailableMoves()
         {
             //Find any numbered panel where the number of flags around it equals its number, then click on every square around that.
-            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyMines > 0);
+            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.AdjacentMines > 0);
             foreach (var numberPanel in numberedPanels)
             {
-                var neighborPanels = Board.GetNearbyPanels(numberPanel.X, numberPanel.Y);
+                var neighborPanels = Board.GetNeighbors(numberPanel.X, numberPanel.Y);
                 var flaggedNeighbors = neighborPanels.Where(x => x.IsFlagged);
-                if (flaggedNeighbors.Count() == numberPanel.NearbyMines && neighborPanels.Any(x => !x.IsRevealed && !x.IsFlagged))
+                if (flaggedNeighbors.Count() == numberPanel.AdjacentMines && neighborPanels.Any(x => !x.IsRevealed && !x.IsFlagged))
                 {
                     return true;
                 }
 
-                var neighborNumberPanels = neighborPanels.Where(x => x.NearbyMines > 0);
+                var neighborNumberPanels = neighborPanels.Where(x => x.AdjacentMines > 0);
                 foreach (var neighbor in neighborNumberPanels)
                 {
                     //Find each unopened neighbor of both the original panel and the current neighbor panel
-                    var nextDoorPanels = Board.GetNearbyPanels(neighbor.X, neighbor.Y).Where(x => !x.IsRevealed);
+                    var nextDoorPanels = Board.GetNeighbors(neighbor.X, neighbor.Y).Where(x => !x.IsRevealed);
                     var commonNeighbors = nextDoorPanels.Intersect(neighborNumberPanels.Where(x => !x.IsRevealed));
                     var uniqueNeighbors = nextDoorPanels.Except(commonNeighbors);
-                    if (neighbor.NearbyMines == numberPanel.NearbyMines && commonNeighbors.Where(x => x.IsFlagged).Count() == neighbor.NearbyMines)
+                    if (neighbor.AdjacentMines == numberPanel.AdjacentMines && commonNeighbors.Where(x => x.IsFlagged).Count() == neighbor.AdjacentMines)
                     {
                         foreach (var common in commonNeighbors)
                         {
@@ -160,12 +160,12 @@ namespace MinesweeperSolverDemo.Lib.Solver
         public void NextMove()
         {
             //Find any numbered panel where the number of flags around it equals its number, then click on every neighboring unrevealed panel.
-            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyMines > 0);
+            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.AdjacentMines > 0);
             foreach(var numberPanel in numberedPanels)
             {
-                var neighborPanels = Board.GetNearbyPanels(numberPanel.X, numberPanel.Y);
+                var neighborPanels = Board.GetNeighbors(numberPanel.X, numberPanel.Y);
                 var flaggedNeighbors = neighborPanels.Where(x => x.IsFlagged);
-                if(flaggedNeighbors.Count() == numberPanel.NearbyMines)
+                if(flaggedNeighbors.Count() == numberPanel.AdjacentMines)
                 {
                     //Reveal all unrevealed, unflagged neighbor panels
                     foreach(var unrevealedPanel in neighborPanels.Where(x=>!x.IsRevealed && !x.IsFlagged))
@@ -178,15 +178,15 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
         private void PairsMoves()
         {
-            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.NearbyMines > 0);
+            var numberedPanels = Board.Panels.Where(x => x.IsRevealed && x.AdjacentMines > 0);
             foreach(var numberPanel in numberedPanels)
             {
-                var neighborPanels = Board.GetNearbyPanels(numberPanel.X, numberPanel.Y).Where(x => x.NearbyMines > 0);
+                var neighborPanels = Board.GetNeighbors(numberPanel.X, numberPanel.Y).Where(x => x.AdjacentMines > 0);
                 foreach(var neighbor in neighborPanels)
                 {
-                    var nextDoorPanels = Board.GetNearbyPanels(neighbor.X, neighbor.Y).Where(x => !x.IsRevealed);
+                    var nextDoorPanels = Board.GetNeighbors(neighbor.X, neighbor.Y).Where(x => !x.IsRevealed);
                     var commonNeighbors = nextDoorPanels.Intersect(neighborPanels.Where(x => !x.IsRevealed));
-                    if (neighbor.NearbyMines == numberPanel.NearbyMines && commonNeighbors.Where(x => x.IsFlagged).Count() == neighbor.NearbyMines)
+                    if (neighbor.AdjacentMines == numberPanel.AdjacentMines && commonNeighbors.Where(x => x.IsFlagged).Count() == neighbor.AdjacentMines)
                     {
                         foreach (var common in commonNeighbors.Where(x=>!x.IsFlagged))
                         {
@@ -200,11 +200,11 @@ namespace MinesweeperSolverDemo.Lib.Solver
         public void FlagObviousMines()
         {
             //Foreach revealed panel that has a count > 0, if the number of unrevealed squares around it matches its number, they must all be mines.
-            var numberPanels = Board.GetRevealedPanels().Where(x => x.NearbyMines > 0);
+            var numberPanels = Board.Panels.Where(x => x.IsRevealed && x.AdjacentMines > 0);
             foreach(var panel in numberPanels)
             {
-                var neighborPanels = Board.GetNearbyPanels(panel.X, panel.Y);
-                if(neighborPanels.Count(x=>!x.IsRevealed) == panel.NearbyMines)
+                var neighborPanels = Board.GetNeighbors(panel.X, panel.Y);
+                if(neighborPanels.Count(x=>!x.IsRevealed) == panel.AdjacentMines)
                 {
                     foreach(var neighbor in neighborPanels.Where(x=>!x.IsRevealed))
                     {

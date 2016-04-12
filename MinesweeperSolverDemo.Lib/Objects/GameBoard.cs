@@ -36,36 +36,39 @@ namespace MinesweeperSolverDemo.Lib.Objects
             }
 
             Status = GameStatus.InProgress;
-            
         }
 
-        public List<Panel> GetNearbyPanels(int latitude, int longitude)
+        public List<Panel> GetNeighbors(int x, int y)
         {
-            var nearbyPanels = Panels.Where(panel => panel.X >= (latitude - 1) && panel.X <= (latitude + 1)
-                                                 && panel.Y >= (longitude - 1) && panel.Y <= (longitude + 1));
-            var currentPanel = Panels.Where(panel => panel.X == latitude && panel.Y == longitude);
-            return nearbyPanels.Except(currentPanel).ToList();
+            return GetNeighbors(x, y, 1);
         }
 
-        public List<Panel> GetClosestNeighbors(int latitude, int longitude, int depth)
+        public List<Panel> GetNeighbors(int x, int y, int depth)
         {
-            var nearbyPanels = Panels.Where(panel => panel.X >= (latitude - depth) && panel.X <= (latitude + depth)
-                                                 && panel.Y >= (longitude - depth) && panel.Y <= (longitude + depth));
-            var currentPanel = Panels.Where(panel => panel.X == latitude && panel.Y == longitude);
+            var nearbyPanels = Panels.Where(panel => panel.X >= (x - depth) && panel.X <= (x + depth)
+                                                 && panel.Y >= (y - depth) && panel.Y <= (y + depth));
+            var currentPanel = Panels.Where(panel => panel.X == x && panel.Y == y);
             return nearbyPanels.Except(currentPanel).ToList();
         }
 
         public void RevealPanel(int x, int y)
         {
-            var panel = Panels.First(z => z.X == x && z.Y == y);
-            panel.IsRevealed = true;
-            panel.IsFlagged = false;
-            if (panel.IsMine) Status = GameStatus.Failed; //Game over!
-            if (!panel.IsMine && panel.NearbyMines == 0)
+            //Step 1: Find the Specified Panel
+            var selectedPanel = Panels.First(panel => panel.X == x && panel.Y == y);
+            selectedPanel.IsRevealed = true;
+            selectedPanel.IsFlagged = false; //Revealed panels cannot be flagged
+
+            //Step 2: If the panel is a mine, game over!
+            if (selectedPanel.IsMine) Status = GameStatus.Failed; //Game over!
+
+            //Step 3: If the panel is a zero, cascade reveal neighbors
+            if (!selectedPanel.IsMine && selectedPanel.AdjacentMines == 0)
             {
                 RevealZeros(x, y);
             }
-            if (!panel.IsMine)
+
+            //Step 4: If this move caused the game to be complete, mark it as such
+            if (!selectedPanel.IsMine)
             {
                 CompletionCheck();
             }
@@ -73,40 +76,38 @@ namespace MinesweeperSolverDemo.Lib.Objects
 
         public void FirstMove(int x, int y, Random rand)
         {
-            var depth = 0.25 * Width;
-            var neighbors = GetClosestNeighbors(x, y, (int)depth);
+            //For any board, take the user's first revealed panel + any neighbors of that panel to X depth, and mark them as unavailable for mine placement.
+            var depth = 0.25 * Width; 
+            var neighbors = GetNeighbors(x, y, (int)depth); //Get all neighbors to specified depth
             neighbors.Add(GetPanel(x, y));
-            var mineList = Panels.Except(neighbors).OrderBy(user => rand.Next());
+
+            //Select random panels from set which are not excluded
+            var mineList = Panels.Except(neighbors).OrderBy(user => rand.Next()); 
             var mineSlots = mineList.Take(MineCount).ToList().Select(z => new { z.X, z.Y });
 
-
+            //Place the mines
             foreach (var mineCoord in mineSlots)
             {
-                Panels.Single(z => z.X == mineCoord.X && z.Y == mineCoord.Y).IsMine = true;
+                Panels.Single(panel => panel.X == mineCoord.X && panel.Y == mineCoord.Y).IsMine = true;
             }
 
-            foreach (var openPanel in Panels)
+            //For every panel which is not a mine, determine and save the adjacent mines.
+            foreach (var openPanel in Panels.Where(panel => !panel.IsMine))
             {
-                if (openPanel.IsMine)
-                {
-                    continue;
-                }
-
-                var nearbyPanels = GetNearbyPanels(openPanel.X, openPanel.Y);
-
-                openPanel.NearbyMines = nearbyPanels.Count(z => z.IsMine);
+                var nearbyPanels = GetNeighbors(openPanel.X, openPanel.Y);
+                openPanel.AdjacentMines = nearbyPanels.Count(z => z.IsMine);
             }
         }
 
         public void RevealZeros(int x, int y)
         {
-            var neighborPanels = GetNearbyPanels(x, y).Where(panel => !panel.IsRevealed);
-            foreach (var panel in neighborPanels)
+            var neighborPanels = GetNeighbors(x, y).Where(panel => !panel.IsRevealed);
+            foreach (var neighbor in neighborPanels)
             {
-                panel.IsRevealed = true;
-                if (panel.NearbyMines == 0)
+                neighbor.IsRevealed = true;
+                if (neighbor.AdjacentMines == 0)
                 {
-                    RevealZeros(panel.X, panel.Y);
+                    RevealZeros(neighbor.X, neighbor.Y);
                 }
             }
         }
@@ -131,7 +132,7 @@ namespace MinesweeperSolverDemo.Lib.Objects
                 }
                 else if(panel.IsRevealed && !panel.IsMine)
                 {
-                    output += panel.NearbyMines + " ";
+                    output += panel.AdjacentMines + " ";
                 }
                 else if(panel.IsRevealed && panel.IsMine)
                 {
@@ -157,7 +158,7 @@ namespace MinesweeperSolverDemo.Lib.Objects
                 }
                 else if (!panel.IsMine)
                 {
-                    output += panel.NearbyMines + " ";
+                    output += panel.AdjacentMines + " ";
                 }
             }
             Console.WriteLine(output); //Write the last line
@@ -188,11 +189,6 @@ namespace MinesweeperSolverDemo.Lib.Objects
             stats.PercentPanelsRevealed = Math.Round((double)(stats.PanelsRevealed / stats.TotalPanels) * 100, 2);
 
             return stats;
-        }
-
-        public List<Panel> GetRevealedPanels()
-        {
-            return Panels.Where(x => x.IsRevealed).ToList();
         }
 
         public Panel GetPanel(int x, int y)

@@ -59,12 +59,12 @@ namespace MinesweeperSolverDemo
         private static void PlayGame()
         {
             char input = 'S';
+            Random rand = new Random();
             SingleGameSolver solver = null;
             while(input != 'Q')
             {
                 if (solver == null)
                 {
-                    Random rand = new Random();
                     solver = new SingleGameSolver(rand);
                     PlayCommands();
                 }
@@ -82,6 +82,11 @@ namespace MinesweeperSolverDemo
                 }
                 if (input == 'R')
                 {
+                    if (!solver.Board.Panels.Any(panel => panel.IsRevealed))
+                    {
+                        solver.FirstMove();
+                    }
+
                     int x = 0, y = 0;
                     while (x <= 0)
                     {
