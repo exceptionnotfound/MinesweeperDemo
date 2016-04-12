@@ -41,10 +41,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Enums\GameStatus.cs" />
-    <Compile Include="Objects\Coordinate.cs" />
+    <Compile Include="Objects\BoardStats.cs" />
     <Compile Include="Objects\GameBoard.cs" />
     <Compile Include="Objects\Panel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Solver\GameSolver.cs" />
     <Compile Include="Solver\MultiGameSolver.cs" />
     <Compile Include="Solver\SingleGameSolver.cs" />
   </ItemGroup>

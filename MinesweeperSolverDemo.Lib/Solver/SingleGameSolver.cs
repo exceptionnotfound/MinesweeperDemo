@@ -7,11 +7,9 @@ using System.Threading.Tasks;
 
 namespace MinesweeperSolverDemo.Lib.Solver
 {
-    public class SingleGameSolver
+    public class SingleGameSolver : GameSolver
     {
         public GameBoard Board { get; set; }
-
-        public List<Panel> CompletedPanels { get; set; }
 
         public bool IsUnsolveable { get; set; }
 
@@ -50,94 +48,7 @@ namespace MinesweeperSolverDemo.Lib.Solver
             Random = rand;
         }
 
-        public int GetWidth()
-        {
-            Console.Write("Please enter the width of the board: ");
-            string widthEntered = Console.ReadLine();
-            int width;
-            bool isValid = int.TryParse(widthEntered, out width);
-            if (isValid)
-            {
-                return width;
-            }
-            else return -1;
-        }
-
-        public int GetHeight()
-        {
-            Console.Write("Please enter the height of the board: ");
-            string heightEntered = Console.ReadLine();
-            int height;
-            bool isValid = int.TryParse(heightEntered, out height);
-            if (isValid)
-            {
-                return height;
-            }
-            else return -1;
-        }
-
-        public int GetMines()
-        {
-            Console.Write("Please enter the number of mines on the board: ");
-            string minesEntered = Console.ReadLine();
-            int mines;
-            bool isValid = int.TryParse(minesEntered, out mines);
-            if (isValid)
-            {
-                return mines;
-            }
-            else return -1;
-        }
-
-        public void CoordinateErrors(int coord)
-        {
-            if (coord == 0)
-            {
-                Console.WriteLine("Please enter a value greater than 0.");
-            }
-            else if (coord < 0)
-            {
-                Console.WriteLine("Please enter a valid positive integer.");
-            }
-        }
-
-        public void MinesErrors(int mines)
-        {
-            if (mines == 0)
-            {
-                Console.WriteLine("The nunmber of mines must be greater than 0.");
-            }
-            else if (mines < 0)
-            {
-                Console.WriteLine("Please enter a valid positive number for the number of mines on the board.");
-            }
-        }
-
-        public void HeightErrors(int height)
-        {
-            if (height == 0)
-            {
-                Console.WriteLine("The height of the board must be greater than 0.");
-            }
-            else if (height < 0)
-            {
-                Console.WriteLine("Please enter a valid positive number for the height.");
-            }
-        }
-
-        public void WidthErrors(int width)
-        {
-            if (width == 0)
-            {
-                Console.WriteLine("The width of the board must be greater than 0.");
-            }
-            else if (width < 0)
-            {
-                Console.WriteLine("Please enter a valid positive number for the width.");
-            }
-        }
-
-        public void Solve()
+        public BoardStats Solve()
         {
             while (Board.Status == Enums.GameStatus.InProgress)
             {
@@ -187,6 +98,8 @@ namespace MinesweeperSolverDemo.Lib.Solver
                 Board.Display();
                 Console.WriteLine("Game is UNSOLVEABLE");
             }
+
+            return Board.GetStats();
         }
 
         public void FirstMove()
@@ -303,7 +216,7 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
         public void Endgame()
         {
-            //Count all the flagged panels.  If the number of flagged panels == the number of mines on the board, reveal all remaining panels.
+            //Count all the flagged panels.  If the number of flagged panels == the number of mines on the board, reveal all non-flagged panels.
             var flaggedPanels = Board.Panels.Where(x => x.IsFlagged).Count();
             if(flaggedPanels == Board.MineCount)
             {
@@ -314,11 +227,6 @@ namespace MinesweeperSolverDemo.Lib.Solver
                     Board.RevealPanel(panel.X, panel.Y);
                 }
             }
-        }
-
-        public void ChangeCompletedPanels()
-        {
-            var revealedPanels = Board.GetRevealedPanels();
         }
     }
 }

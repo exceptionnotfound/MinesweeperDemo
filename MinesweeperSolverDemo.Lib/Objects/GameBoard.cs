@@ -15,6 +15,9 @@ namespace MinesweeperSolverDemo.Lib.Objects
         public List<Panel> Panels { get; set; }
         public GameStatus Status { get; set; }
 
+        public double PercentMinesFlagged { get; set; }
+        public double PercentPanelsRevealed { get; set; }
+
         public GameBoard(int width, int height, int mines)
         {
             Width = width;
@@ -62,7 +65,7 @@ namespace MinesweeperSolverDemo.Lib.Objects
             {
                 RevealZeros(x, y);
             }
-            if (Status != GameStatus.Failed)
+            if (!panel.IsMine)
             {
                 CompletionCheck();
             }
@@ -160,24 +163,31 @@ namespace MinesweeperSolverDemo.Lib.Objects
             Console.WriteLine(output); //Write the last line
         }
 
-        public bool IsValidWidth(int width)
-        {
-            return width > 0 && width <= Width;
-        }
-
-        public bool IsValidHeight(int height)
-        {
-            return height > 0 && height <= Height;
-        }
-
         private void CompletionCheck()
         {
-            var unrevealedPanels = Panels.Where(x => !x.IsRevealed).Select(x=>x.ID);
+            var unrevealedPanels = Panels.Where(x => !x.IsRevealed).Select(x => x.ID);
             var minePanels = Panels.Where(x => x.IsMine).Select(x => x.ID);
             if (!unrevealedPanels.Except(minePanels).Any())
             {
                 Status = GameStatus.Completed;
             }
+        }
+
+        public BoardStats GetStats()
+        {
+            BoardStats stats = new BoardStats();
+
+            stats.Mines = Panels.Count(x => x.IsMine);
+            stats.FlaggedMinePanels = Panels.Count(x => x.IsMine && x.IsFlagged);
+
+            stats.PercentMinesFlagged = Math.Round((double)(stats.FlaggedMinePanels / stats.Mines) * 100, 2);
+
+            stats.TotalPanels = Panels.Count;
+            stats.PanelsRevealed = Panels.Count(x => x.IsFlagged || x.IsRevealed);
+
+            stats.PercentPanelsRevealed = Math.Round((double)(stats.PanelsRevealed / stats.TotalPanels) * 100, 2);
+
+            return stats;
         }
 
         public List<Panel> GetRevealedPanels()

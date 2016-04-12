@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MinesweeperSolverDemo.Lib.Solver
 {
-    public class MultiGameSolver
+    public class MultiGameSolver : GameSolver
     {
         public int BoardWidth { get; set; }
         public int BoardHeight { get; set; }
@@ -60,13 +60,15 @@ namespace MinesweeperSolverDemo.Lib.Solver
         public void Run()
         {
             Random rand = new Random();
+            List<BoardStats> stats = new List<BoardStats>();
             Console.WriteLine("Solving Games...");
             for(int i = 0; i < BoardsCount; i++)
             {
                 GameBoard board = new GameBoard(BoardWidth, BoardHeight, MinesCount);
                 SingleGameSolver solver = new SingleGameSolver(board, rand);
                 solver.UseRandomGuesses = UseRandomGuesses;
-                solver.Solve();
+                var boardStats = solver.Solve();
+                stats.Add(boardStats);
 
                 if(solver.Board.Status == Enums.GameStatus.Completed)
                 {
@@ -85,108 +87,17 @@ namespace MinesweeperSolverDemo.Lib.Solver
             Console.WriteLine("Games Completed: " + GamesCompleted.ToString());
             Console.WriteLine("Games Failed: " + GamesFailed.ToString());
             Console.WriteLine("Games Unsolved: " + GamesUnsolved.ToString());
-        }
 
-        
+            //Calculate stats
+            var totalMines = stats.Sum(x => x.Mines);
+            var totalFlaggedMines = stats.Sum(x => x.FlaggedMinePanels);
+            var totalFlaggedMinesPercent = Math.Round(((totalFlaggedMines / totalMines) * 100F), 2);
+            Console.WriteLine("Mines Flagged: " + totalFlaggedMinesPercent.ToString() + "%");
 
-        private int GetWidth()
-        {
-            Console.Write("Please enter the width of the boards: ");
-            string widthEntered = Console.ReadLine();
-            int width;
-            bool isValid = int.TryParse(widthEntered, out width);
-            if (isValid)
-            {
-                return width;
-            }
-            else return -1;
-        }
-
-        private int GetHeight()
-        {
-            Console.Write("Please enter the height of the boards: ");
-            string heightEntered = Console.ReadLine();
-            int height;
-            bool isValid = int.TryParse(heightEntered, out height);
-            if (isValid)
-            {
-                return height;
-            }
-            else return -1;
-        }
-
-        private int GetMines()
-        {
-            Console.Write("Please enter the number of mines on each board: ");
-            string minesEntered = Console.ReadLine();
-            int mines;
-            bool isValid = int.TryParse(minesEntered, out mines);
-            if (isValid)
-            {
-                return mines;
-            }
-            else return -1;
-        }
-
-        private int GetBoards()
-        {
-            Console.Write("Please enter the number of boards to be solved: ");
-            string boardsEntered = Console.ReadLine();
-            int boards;
-            bool isValid = int.TryParse(boardsEntered, out boards);
-            if (isValid)
-            {
-                return boards;
-            }
-            else return -1;
-        }
-
-        private void WidthErrors(int width)
-        {
-            if (width == 0)
-            {
-                Console.WriteLine("The width of the board must be greater than 0.");
-            }
-            else if (width < 0)
-            {
-                Console.WriteLine("Please enter a valid positive number for the width.");
-            }
-        }
-
-        private void HeightErrors(int height)
-        {
-            if (height == 0)
-            {
-                Console.WriteLine("The height of the board must be greater than 0.");
-            }
-            else if (height < 0)
-            {
-                Console.WriteLine("Please enter a valid positive number for the height.");
-            }
-        }
-
-        private void MinesErrors(int mines)
-        {
-            if (mines == 0)
-            {
-                Console.WriteLine("The number of mines must be greater than 0.");
-            }
-            else if (mines < 0)
-            {
-                Console.WriteLine("Please enter a valid positive number for the number of mines on the board.");
-            }
-        }
-
-        private void BoardsErrors(int boards)
-        {
-            if (boards == 0)
-            {
-                Console.WriteLine("The number of boards must be greater than 0.");
-            }
-            else if (boards < 0)
-            {
-                Console.WriteLine("Please enter a valid positive number for the number of boards to be solved.");
-            }
+            var totalPanels = stats.Sum(x => x.TotalPanels);
+            var revealedPanels = stats.Sum(x => x.PanelsRevealed);
+            var totalRevealedPanelsPercent = Math.Round((revealedPanels / totalPanels) * 100F, 2);
+            Console.WriteLine("Panels Revealed: " + totalRevealedPanelsPercent.ToString() + "%");
         }
     }
 }
