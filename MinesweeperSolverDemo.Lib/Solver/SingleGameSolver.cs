@@ -149,7 +149,6 @@ namespace MinesweeperSolverDemo.Lib.Solver
                     FirstMove();
                 }
                 FlagObviousMines();
-
                 Board.Display();
 
                 if (HasAvailableMoves())
@@ -161,7 +160,9 @@ namespace MinesweeperSolverDemo.Lib.Solver
                 {
                     if (UseRandomGuesses)
                     {
+                        Console.WriteLine("RANDOM MOVE!");
                         RandomMove();
+                        
                     }
                     else
                     {
@@ -191,11 +192,11 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
         public void FirstMove()
         {
-            var randomID = Random.Next(1, Board.Panels.Count);
-            var panel = Board.Panels.First(x => x.ID == randomID);
+            var randomX = Random.Next(1, Board.Width - 1);
+            var randomY = Random.Next(1, Board.Height - 1);
 
-            Board.FirstMove(panel.Coordinate.Latitude, panel.Coordinate.Longitude, Random);
-            Board.RevealPanel(panel.Coordinate);
+            Board.FirstMove(randomX, randomY, Random);
+            Board.RevealPanel(randomX, randomY);
             MoveCounter++;
         }
 
@@ -238,13 +239,6 @@ namespace MinesweeperSolverDemo.Lib.Solver
                         foreach (var common in commonNeighbors)
                         {
                             Board.RevealPanel(common.Coordinate);
-                        }
-                    }
-                    else if (neighbor.NearbyBombs - numberPanel.NearbyBombs == nextDoorPanels.Count() - neighborNumberPanels.Where(x => !x.IsRevealed).Count())
-                    {
-                        foreach (var unique in uniqueNeighbors)
-                        {
-                            Board.FlagPanel(unique.Coordinate.Latitude, unique.Coordinate.Longitude);
                         }
                     }
                 }

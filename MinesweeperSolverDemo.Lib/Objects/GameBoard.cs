@@ -44,6 +44,14 @@ namespace MinesweeperSolverDemo.Lib.Objects
             return nearbyPanels.Except(currentPanel).ToList();
         }
 
+        public List<Panel> GetClosestNeighbors(int latitude, int longitude, int depth)
+        {
+            var nearbyPanels = Panels.Where(x => x.Coordinate.Latitude >= (latitude - depth) && x.Coordinate.Latitude <= (latitude + depth)
+                                                 && x.Coordinate.Longitude >= (longitude - depth) && x.Coordinate.Longitude <= (longitude + depth));
+            var currentPanel = Panels.Where(x => x.Coordinate.Latitude == latitude && x.Coordinate.Longitude == longitude);
+            return nearbyPanels.Except(currentPanel).ToList();
+        }
+
         public void RevealPanel(Coordinate coordinate)
         {
             RevealPanel(coordinate.Latitude, coordinate.Longitude);
@@ -53,6 +61,7 @@ namespace MinesweeperSolverDemo.Lib.Objects
         {
             var panel = Panels.First(z => z.Coordinate.Latitude == x && z.Coordinate.Longitude == y);
             panel.IsRevealed = true;
+            panel.IsFlagged = false;
             if (panel.IsBomb) Status = GameStatus.Failed; //Game over!
             if (!panel.IsBomb && panel.NearbyBombs == 0)
             {
@@ -66,7 +75,8 @@ namespace MinesweeperSolverDemo.Lib.Objects
 
         public void FirstMove(int x, int y, Random rand)
         {
-            var neighbors = GetNearbyPanels(x, y);
+            var depth = 0.25 * Width;
+            var neighbors = GetClosestNeighbors(x, y, (int)depth);
             neighbors.Add(GetPanel(x, y));
             var bombList = Panels.Except(neighbors).OrderBy(user => rand.Next());
             var bombSlots = bombList.Take(BombCount).ToList().Select(z => z.Coordinate);
@@ -148,11 +158,7 @@ namespace MinesweeperSolverDemo.Lib.Objects
                     Console.WriteLine(output);
                     output = "";
                 }
-                if (panel.IsFlagged)
-                {
-                    output += "F ";
-                }
-                else if (panel.IsBomb)
+                if (panel.IsBomb)
                 {
                     output += "M ";
                 }
