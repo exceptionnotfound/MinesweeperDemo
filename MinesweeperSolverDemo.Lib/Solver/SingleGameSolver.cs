@@ -11,8 +11,6 @@ namespace MinesweeperSolverDemo.Lib.Solver
     {
         public GameBoard Board { get; set; }
 
-        public bool IsUnsolveable { get; set; }
-
         public Random Random { get; set; }
 
         public SingleGameSolver(Random rand)
@@ -79,11 +77,6 @@ namespace MinesweeperSolverDemo.Lib.Solver
             else if (Board.Status == Enums.GameStatus.Completed)
             {
                 Console.WriteLine("Solver SUCCESS");
-            }
-            else if(IsUnsolveable)
-            {
-                Board.Display();
-                Console.WriteLine("Game is UNSOLVEABLE");
             }
 
             return Board.GetStats();
