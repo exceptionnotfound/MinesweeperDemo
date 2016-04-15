@@ -77,7 +77,7 @@ namespace MinesweeperSolverDemo.Lib.Objects
         public void FirstMove(int x, int y, Random rand)
         {
             //For any board, take the user's first revealed panel + any neighbors of that panel to X depth, and mark them as unavailable for mine placement.
-            var depth = 0.25 * Width; 
+            var depth = 0.125 * Width; 
             var neighbors = GetNeighbors(x, y, (int)depth); //Get all neighbors to specified depth
             neighbors.Add(GetPanel(x, y));
 
@@ -166,9 +166,9 @@ namespace MinesweeperSolverDemo.Lib.Objects
 
         private void CompletionCheck()
         {
-            var unrevealedPanels = Panels.Where(x => !x.IsRevealed).Select(x => x.ID);
+            var hiddenPanels = Panels.Where(x => !x.IsRevealed).Select(x => x.ID);
             var minePanels = Panels.Where(x => x.IsMine).Select(x => x.ID);
-            if (!unrevealedPanels.Except(minePanels).Any())
+            if (!hiddenPanels.Except(minePanels).Any())
             {
                 Status = GameStatus.Completed;
             }

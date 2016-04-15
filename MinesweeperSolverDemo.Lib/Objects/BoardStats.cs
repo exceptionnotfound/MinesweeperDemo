@@ -11,7 +11,6 @@ namespace MinesweeperSolverDemo.Lib.Objects
         public double TotalPanels { get; set; }
         public double PanelsRevealed { get; set; }
         public double Mines { get; set; }
-        public double FlaggedPanels { get; set; }
         public double FlaggedMinePanels { get; set; }
         public double PercentMinesFlagged { get; set; }
         public double PercentPanelsRevealed { get; set; }

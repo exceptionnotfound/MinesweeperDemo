@@ -16,16 +16,10 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
         public int GamesCompleted { get; set; }
         public int GamesFailed { get; set; }
-        public int GamesUnsolved { get; set; }
         public bool UseRandomGuesses { get; set; }
 
         public MultiGameSolver()
         {
-            Console.WriteLine("Do you want the solver to use random guesses? y/n");
-            char useRandom = Console.ReadLine().ToUpper().First();
-
-            UseRandomGuesses = useRandom == 'Y';
-
             int height = 0, width = 0, mines = 0, boards = 0;
             while (width <= 0)
             {
@@ -66,7 +60,6 @@ namespace MinesweeperSolverDemo.Lib.Solver
             {
                 GameBoard board = new GameBoard(BoardWidth, BoardHeight, MinesCount);
                 SingleGameSolver solver = new SingleGameSolver(board, rand);
-                solver.UseRandomGuesses = UseRandomGuesses;
                 var boardStats = solver.Solve();
                 stats.Add(boardStats);
 
@@ -78,15 +71,10 @@ namespace MinesweeperSolverDemo.Lib.Solver
                 {
                     GamesFailed++;
                 }
-                else if(solver.IsUnsolveable)
-                {
-                    GamesUnsolved++;
-                }
             }
 
             Console.WriteLine("Games Completed: " + GamesCompleted.ToString());
             Console.WriteLine("Games Failed: " + GamesFailed.ToString());
-            Console.WriteLine("Games Unsolved: " + GamesUnsolved.ToString());
 
             //Calculate stats
             var totalMines = stats.Sum(x => x.Mines);

@@ -42,7 +42,7 @@ namespace MinesweeperSolverDemo
             Console.WriteLine("Q - Quit Game");
             Console.WriteLine("");
             Console.WriteLine("Here's the key for the panels on the game board:");
-            Console.WriteLine("U - Unrevealed");
+            Console.WriteLine("U - Hidden");
             Console.WriteLine("# - Number of adjacent panels (including diagonals) that have mines on them.");
             Console.WriteLine("F - A flagged panel");
             Console.WriteLine("X - Mine (don't reveal these!)");
