@@ -16,7 +16,6 @@ namespace MinesweeperSolverDemo.Lib.Solver
 
         public int GamesCompleted { get; set; }
         public int GamesFailed { get; set; }
-        public bool UseRandomGuesses { get; set; }
 
         public MultiGameSolver()
         {
